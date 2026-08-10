@@ -498,7 +498,7 @@
               <label class="flabel">Tank Mix / Rate Notes</label>
               <input type="text" id="f-tankmix" placeholder="e.g. 2% Candor + surfactant, foliar">
             </div>
-            <div class="row2">
+            <div class="row2 row2-tight">
               <div class="field">
                 <label class="flabel">Air Temp (°F)</label>
                 <input type="number" step="1" id="f-temp" placeholder="e.g. 68">
@@ -507,28 +507,18 @@
                 <label class="flabel">Wind Speed (mph)</label>
                 <input type="number" step="1" min="0" id="f-wind" placeholder="e.g. 5">
               </div>
-              <div class="field">
-                <label class="flabel">Temp. Inversion Present?</label>
-                <div class="toggle-row">
-                  <button type="button" class="toggle-btn" data-inversion="Yes">Yes</button>
-                  <button type="button" class="toggle-btn active" data-inversion="No">No</button>
-                </div>
+            </div>
+            <div class="field">
+              <label class="flabel">Temp. Inversion Present?</label>
+              <div class="toggle-row">
+                <button type="button" class="toggle-btn" data-inversion="Yes">Yes</button>
+                <button type="button" class="toggle-btn active" data-inversion="No">No</button>
               </div>
             </div>
-            <div class="hint">Temperature inversions trap spray near the ground and increase drift risk — check label restrictions before applying herbicide if an inversion is suspected.</div>
+            <div class="hint">Temperature inversions trap spray near the ground and increase drift risk, check label restrictions before applying herbicide if an inversion is suspected.</div>
 
             <div class="section-divider"></div>
             <div class="section-subtitle">Use Log</div>
-            <div class="row2 row2-tight">
-              <div class="field">
-                <label class="flabel">Amount Used</label>
-                <input type="number" step="any" min="0" id="f-pesticideAmount" placeholder="e.g. 1.5">
-              </div>
-              <div class="field">
-                <label class="flabel">Unit of Measure</label>
-                <select id="f-pesticideUnit"></select>
-              </div>
-            </div>
             <div class="row2 row2-tight">
               <div class="field">
                 <label class="flabel">Total Area Treated</label>
@@ -537,6 +527,17 @@
               <div class="field">
                 <label class="flabel">Unit of Measure</label>
                 <select id="f-areaUnit"></select>
+              </div>
+            </div>
+            <div class="hint" style="margin-top:-9px;margin-bottom:16px;">Includes area treated by mechanical, manual, or other non-chemical control, not limited to pesticide application.</div>
+            <div class="row2 row2-tight">
+              <div class="field">
+                <label class="flabel">Amount Used</label>
+                <input type="number" step="any" min="0" id="f-pesticideAmount" placeholder="e.g. 1.5">
+              </div>
+              <div class="field">
+                <label class="flabel">Unit of Measure</label>
+                <select id="f-pesticideUnit"></select>
               </div>
             </div>
           </div>
