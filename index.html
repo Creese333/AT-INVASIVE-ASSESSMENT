@@ -302,11 +302,18 @@
   /* analytics view */
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
   .stat-card{
-    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-    padding:14px;box-shadow:var(--shadow);
+    background:var(--card);border:1px solid var(--line);border-left:4px solid var(--forest);border-radius:var(--radius);
+    padding:14px;box-shadow:var(--shadow);position:relative;overflow:hidden;
   }
-  .stat-card .stat-value{font-family:'Roboto Slab',serif;font-weight:900;font-size:26px;color:var(--forest-dark);line-height:1;}
-  .stat-card .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:0.4px;color:var(--ink-soft);font-weight:600;margin-top:5px;display:block;}
+  .stat-card .stat-icon{font-size:19px;display:block;margin-bottom:7px;line-height:1;}
+  .stat-card .stat-value{font-family:'Roboto Slab',serif;font-weight:900;font-size:32px;color:var(--forest-dark);line-height:1;}
+  .stat-card .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);font-weight:700;margin-top:6px;display:block;}
+  .stat-card.accent-rust{border-left-color:var(--rust);}
+  .stat-card.accent-rust .stat-value{color:var(--rust);}
+  .stat-card.accent-amber{border-left-color:var(--amber);}
+  .stat-card.accent-amber .stat-value{color:#9C6A17;}
+  .stat-card.accent-moss{border-left-color:var(--moss);}
+  .stat-card.accent-moss .stat-value{color:var(--moss);}
   .chart-row{margin-bottom:12px;}
   .chart-row:last-child{margin-bottom:0;}
   .chart-label{font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.35;margin-bottom:4px;}
@@ -1494,7 +1501,6 @@
 
     const total = list.length;
     const edrrCount = list.filter(e=> e.edrrPriority==="Yes").length;
-    const herbicideCount = list.filter(e=> e.treatment==="Herbicide Application" || e.treatment==="Combination").length;
     const followupCount = list.filter(e=> e.followup==="Yes").length;
 
     // Convert every recorded area to acres so mixed units (sq ft, sq yd, sq m, hectares) can be summed meaningfully.
@@ -1513,11 +1519,10 @@
     const totalAcresDisplay = totalAcres > 0 && totalAcres < 0.01 ? "<0.01" : totalAcres.toFixed(2);
 
     document.getElementById("stat-grid").innerHTML = `
-      <div class="stat-card"><span class="stat-value">${total}</span><span class="stat-label">Sites Logged</span></div>
-      <div class="stat-card"><span class="stat-value">${edrrCount}</span><span class="stat-label">EDRR Priority</span></div>
-      <div class="stat-card"><span class="stat-value">${herbicideCount}</span><span class="stat-label">Herbicide Treated</span></div>
-      <div class="stat-card"><span class="stat-value">${followupCount}</span><span class="stat-label">Need Follow-up</span></div>
-      <div class="stat-card"><span class="stat-value">${totalAcresDisplay}</span><span class="stat-label">Acres Treated</span></div>
+      <div class="stat-card"><span class="stat-icon">🌿</span><span class="stat-value">${total}</span><span class="stat-label">Sites Logged</span></div>
+      <div class="stat-card accent-rust"><span class="stat-icon">⚠</span><span class="stat-value">${edrrCount}</span><span class="stat-label">EDRR Priority</span></div>
+      <div class="stat-card accent-amber"><span class="stat-icon">📅</span><span class="stat-value">${followupCount}</span><span class="stat-label">Need Follow-up</span></div>
+      <div class="stat-card accent-moss"><span class="stat-icon">🌾</span><span class="stat-value">${totalAcresDisplay}</span><span class="stat-label">Acres Treated</span></div>
     `;
 
     const edrrBreakdown = {"EDRR Priority": edrrCount, "Standard Rotation": total - edrrCount};
