@@ -112,6 +112,11 @@
   }
   label.flabel .req{color:var(--rust);}
   .hint{font-size:12px;color:var(--ink-soft);margin-top:4px;line-height:1.4;}
+  .section-divider{border-top:1px dashed var(--line);margin:16px 0 14px;}
+  .section-subtitle{
+    font-family:'Roboto Slab',serif;font-size:14px;font-weight:700;color:var(--forest-dark);
+    text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;
+  }
   .typeahead-wrap{position:relative;}
   .typeahead-list{
     position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:30;
@@ -467,14 +472,19 @@
               <label class="flabel">Treatment Type</label>
               <select id="f-treatment"></select>
             </div>
+            <div class="field">
+              <label class="flabel">Pesticide Product Used</label>
+              <select id="f-pesticide"></select>
+              <div class="hint">EPA registration numbers shown are for the exact labeled product — confirm against the container label before application, as formulations and registrants can change.</div>
+            </div>
             <div class="row2">
-              <div class="field">
-                <label class="flabel">Herbicide Used</label>
-                <select id="f-herbicide"></select>
-              </div>
               <div class="field">
                 <label class="flabel">Application Method</label>
                 <select id="f-method"></select>
+              </div>
+              <div class="field">
+                <label class="flabel">Applicator / Certification #</label>
+                <input type="text" id="f-applicator" placeholder="Name or cert #">
               </div>
             </div>
             <div class="field">
@@ -483,15 +493,9 @@
             </div>
             <div class="row2">
               <div class="field">
-                <label class="flabel">Applicator / Certification #</label>
-                <input type="text" id="f-applicator" placeholder="Name or cert #">
-              </div>
-              <div class="field">
                 <label class="flabel">Air Temp (°F)</label>
                 <input type="number" step="1" id="f-temp" placeholder="e.g. 68">
               </div>
-            </div>
-            <div class="row2">
               <div class="field">
                 <label class="flabel">Wind Speed (mph)</label>
                 <input type="number" step="1" min="0" id="f-wind" placeholder="e.g. 5">
@@ -505,6 +509,29 @@
               </div>
             </div>
             <div class="hint">Temperature inversions trap spray near the ground and increase drift risk — check label restrictions before applying herbicide if an inversion is suspected.</div>
+
+            <div class="section-divider"></div>
+            <div class="section-subtitle">Use Log</div>
+            <div class="row2 row2-tight">
+              <div class="field">
+                <label class="flabel">Amount Used</label>
+                <input type="number" step="any" min="0" id="f-pesticideAmount" placeholder="e.g. 1.5">
+              </div>
+              <div class="field">
+                <label class="flabel">Unit of Measure</label>
+                <select id="f-pesticideUnit"></select>
+              </div>
+            </div>
+            <div class="row2 row2-tight">
+              <div class="field">
+                <label class="flabel">Total Area Treated</label>
+                <input type="number" step="any" min="0" id="f-areaTreated" placeholder="e.g. 0.25">
+              </div>
+              <div class="field">
+                <label class="flabel">Unit of Measure</label>
+                <select id="f-areaUnit"></select>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -577,7 +604,7 @@
           <div class="card-body"><div id="chart-treatment"></div></div>
         </div>
         <div class="card">
-          <div class="card-head"><div class="card-num">🧪</div><h2>Herbicide Use</h2></div>
+          <div class="card-head"><div class="card-num">🧪</div><h2>Pesticide Use</h2></div>
           <div class="card-body"><div id="chart-herbicide"></div></div>
         </div>
         <div class="card">
@@ -688,10 +715,23 @@
   const SIZES = ["Point (<10 sq ft)","Small (10-100 sq ft)","Medium (100 sq ft - 0.25 ac)","Large (0.25-1 ac)","Very Large (>1 ac)"];
   const COVERS = ["<1%","1-5%","6-25%","26-50%","51-75%","76-100%"];
   const TREATMENTS = ["None - Monitor Only","Manual/Mechanical Removal","Herbicide Application","Biological Control","Prescribed Fire","Combination","Other"];
-  const HERBICIDES = ["None","Glyphosate (Roundup / Accord XRT II)","Triclopyr (Garlon 4 Ultra / Candor)","Triclopyr + Fluroxypyr (PastureGard HL)","Aminopyralid (Milestone)","Imazapyr (Habitat)","Metsulfuron-methyl (Escort XP)","Other (specify in notes)"];
+  const PESTICIDES = [
+    "None",
+    "Accord XRT II — Glyphosate (EPA Reg. No. 62719-556)",
+    "Garlon 4 Ultra — Triclopyr (EPA Reg. No. 62719-527)",
+    "PastureGard HL — Triclopyr + Fluroxypyr (EPA Reg. No. 62719-637)",
+    "Milestone — Aminopyralid (EPA Reg. No. 62719-519)",
+    "Habitat — Imazapyr (EPA Reg. No. 241-426)",
+    "Escort XP — Metsulfuron-methyl (EPA Reg. No. 432-1549)",
+    "TREE-äge R10 — Emamectin Benzoate, tree injection (EPA Reg. No. 74578-12)",
+    "IMA-jet — Imidacloprid, tree injection (EPA Reg. No. 74578-1)",
+    "Other (specify in notes)"
+  ];
+  const PESTICIDE_UNITS = ["fl oz","oz (weight)","pt","qt","gal","mL","L","g","lb","% (tank mix rate)"];
+  const AREA_UNITS = ["sq ft","sq yd","acres","sq m","hectares"];
   const METHODS = ["N/A","Foliar Spray","Cut-Stump","Basal Bark","Hack-and-Squirt","Frill/Girdle","Stem Injection"];
 
-  const CSV_COLUMNS = ["Record ID","Site Name","Date","Surveyor(s)","State","Land Manager","A.T. Mile Marker","Latitude","Longitude","Species","EDRR Priority","Growth Stage","Patch Type","Infestation Size","Percent Cover","Treatment Type","Herbicide Used","Application Method","Tank Mix/Rate Notes","Applicator","Air Temp (F)","Wind Speed (mph)","Temperature Inversion","Follow-up Needed","Next Monitoring Date","Photos Taken","Photo File(s)/Reference","Notes"];
+  const CSV_COLUMNS = ["Record ID","Site Name","Date","Surveyor(s)","State","Land Manager","A.T. Mile Marker","Latitude","Longitude","Species","EDRR Priority","Growth Stage","Patch Type","Infestation Size","Percent Cover","Treatment Type","Pesticide Product Used","Amount Used","Unit of Measure","Application Method","Tank Mix/Rate Notes","Applicator","Air Temp (F)","Wind Speed (mph)","Temperature Inversion","Total Area Treated","Area Unit","Follow-up Needed","Next Monitoring Date","Photos Taken","Photo File(s)/Reference","Notes"];
 
   /* ================= CONFIGURE THIS ================= */
   // Paste your Apps Script Web app URL and the SHARED_TOKEN you set in Code.gs.
@@ -951,7 +991,9 @@
   fillSelect(document.getElementById("f-growthStage"), GROWTH_STAGES, "Select...");
   fillSelect(document.getElementById("f-patchType"), PATCH_TYPES, "Select...");
   fillSelect(document.getElementById("f-treatment"), TREATMENTS, "Select...");
-  fillSelect(document.getElementById("f-herbicide"), HERBICIDES, "Select...");
+  fillSelect(document.getElementById("f-pesticide"), PESTICIDES, "Select...");
+  fillSelect(document.getElementById("f-pesticideUnit"), PESTICIDE_UNITS, "Select...");
+  fillSelect(document.getElementById("f-areaUnit"), AREA_UNITS, "Select...");
   fillSelect(document.getElementById("f-method"), METHODS, "Select...");
 
   function buildChips(container, options, name){
@@ -1160,7 +1202,11 @@
       size: getSelectedRadio("size"),
       cover: getSelectedRadio("cover"),
       treatment: document.getElementById("f-treatment").value,
-      herbicide: document.getElementById("f-herbicide").value,
+      pesticide: document.getElementById("f-pesticide").value,
+      pesticideAmount: document.getElementById("f-pesticideAmount").value,
+      pesticideUnit: document.getElementById("f-pesticideUnit").value,
+      areaTreated: document.getElementById("f-areaTreated").value,
+      areaUnit: document.getElementById("f-areaUnit").value,
       method: document.getElementById("f-method").value,
       tankmix: document.getElementById("f-tankmix").value.trim(),
       applicator: document.getElementById("f-applicator").value.trim(),
@@ -1254,7 +1300,11 @@
     if(entry.size){ const el = document.querySelector(`input[name="size"][value="${CSS.escape(entry.size)}"]`); if(el) el.checked = true; }
     if(entry.cover){ const el = document.querySelector(`input[name="cover"][value="${CSS.escape(entry.cover)}"]`); if(el) el.checked = true; }
     document.getElementById("f-treatment").value = entry.treatment || "";
-    document.getElementById("f-herbicide").value = entry.herbicide || "";
+    document.getElementById("f-pesticide").value = entry.pesticide || "";
+    document.getElementById("f-pesticideAmount").value = entry.pesticideAmount || "";
+    document.getElementById("f-pesticideUnit").value = entry.pesticideUnit || "";
+    document.getElementById("f-areaTreated").value = entry.areaTreated || "";
+    document.getElementById("f-areaUnit").value = entry.areaUnit || "";
     document.getElementById("f-method").value = entry.method || "";
     document.getElementById("f-tankmix").value = entry.tankmix || "";
     document.getElementById("f-applicator").value = entry.applicator || "";
@@ -1469,8 +1519,8 @@
 
     const byHerbicide = {};
     list.forEach(e=>{
-      if(e.herbicide && e.herbicide!=="None" && e.herbicide!==""){
-        byHerbicide[e.herbicide] = (byHerbicide[e.herbicide]||0)+1;
+      if(e.pesticide && e.pesticide!=="None" && e.pesticide!==""){
+        byHerbicide[e.pesticide] = (byHerbicide[e.pesticide]||0)+1;
       }
     });
     renderBarChart(document.getElementById("chart-herbicide"), byHerbicide);
@@ -1499,7 +1549,8 @@
       rows.push([
         e.recordId, e.siteName, e.date, e.surveyor, e.state, e.landManager, e.mile, e.lat, e.lng,
         e.species, e.edrrPriority, e.growthStage, e.patchType, e.size, e.cover,
-        e.treatment, e.herbicide, e.method, e.tankmix, e.applicator, e.temp, e.wind, e.inversion,
+        e.treatment, e.pesticide, e.pesticideAmount, e.pesticideUnit, e.method, e.tankmix, e.applicator, e.temp, e.wind, e.inversion,
+        e.areaTreated, e.areaUnit,
         e.followup, e.nextdate, e.photosTaken, (e.photos||[]).map(p=>p.name).join("; "), e.notes
       ]);
     });
