@@ -480,8 +480,11 @@
             </div>
             <div class="field">
               <label class="flabel">Pesticide Product Used</label>
-              <select id="f-pesticide"></select>
-              <div class="hint">EPA registration numbers shown are for the exact labeled product — confirm against the container label before application, as formulations and registrants can change.</div>
+              <div class="typeahead-wrap">
+                <input type="text" id="f-pesticide" placeholder="Start typing to search — e.g. glyphosate, Garlon..." autocomplete="off">
+                <div class="typeahead-list" id="pesticide-suggestions"></div>
+              </div>
+              <div class="hint">Tap a suggestion, or type a product not on the list and use it as typed. EPA registration numbers shown are for the exact labeled product — confirm against the container label before application, as formulations and registrants can change.</div>
             </div>
             <div class="row2">
               <div class="field">
@@ -722,18 +725,7 @@
   const SIZES = ["Point (<10 sq ft)","Small (10-100 sq ft)","Medium (100 sq ft - 0.25 ac)","Large (0.25-1 ac)","Very Large (>1 ac)"];
   const COVERS = ["<1%","1-5%","6-25%","26-50%","51-75%","76-100%"];
   const TREATMENTS = ["None - Monitor Only","Manual/Mechanical Removal","Herbicide Application","Biological Control","Prescribed Fire","Combination","Other"];
-  const PESTICIDES = [
-    "None",
-    "Accord XRT II — Glyphosate (EPA Reg. No. 62719-556)",
-    "Garlon 4 Ultra — Triclopyr (EPA Reg. No. 62719-527)",
-    "PastureGard HL — Triclopyr + Fluroxypyr (EPA Reg. No. 62719-637)",
-    "Milestone — Aminopyralid (EPA Reg. No. 62719-519)",
-    "Habitat — Imazapyr (EPA Reg. No. 241-426)",
-    "Escort XP — Metsulfuron-methyl (EPA Reg. No. 432-1549)",
-    "TREE-äge R10 — Emamectin Benzoate, tree injection (EPA Reg. No. 74578-12)",
-    "IMA-jet — Imidacloprid, tree injection (EPA Reg. No. 74578-1)",
-    "Other (specify in notes)"
-  ];
+  const PESTICIDES = ["None","Accord Concentrate (62719-324)","Accord SP (62719-322)","Accord XRT (62719-517)","Accord XRT II (62719-556)","Alligare Boulder 6.3 (81927-54)","Alligare Bromacil 80 (81927-4)","Alligare Bromacil/Diuron 40/40 (81927-3)","Alligare Chlorsulfuron 75 (81927-43)","Alligare Cleargraze Pasture Herbicide (81927-65)","Alligare Diuron 4L (81927-44)","Alligare Diuron 80DF (81927-12)","Alligare Dryphosate 75SG (81927-60)","Alligare Ecomazapyr 2SL (81927-22)","Alligare Flagstaff (81927-61)","Alligare Fluridone (81927-45)","Alligare Glyphosate 5.4 (81927-8)","Alligare Hyvar X IVM (81927-4)","Alligare Hyvar X-L IVM (81927-77)","Alligare Imazapyr 4SL (81927-24)","Alligare Krovar IVM (81927-3)","Alligare Laramie 25DF (81927-57)","Alligare Mojave 70 EG (81927-25)","Alligare MSM 60 (81927-7)","Alligare Panoramic 2SL (66222-141-81927)","Alligare Rotary 2 SL (81927-6)","Alligare SFM 75 (81927-26)","Alligare SFM Extra (81927-5)","Alligare Tebuthiuron 20 P (81927-41)","Alligare Tebuthiuron 80 WG (81927-37)","Alligare Triclopyr 4 (81927-11)","AmTide MSM 60DF Herbicide (83851-3)","Aqua Neat (228-365)","AquaPro Aquatic Herbicide (62719-324-67690)","Arsenal (241-346)","Arsenal Applicators Conc. (241-299)","Arsenal PowerLine (241-431)","Avast! (67690-30)","Brahma 44 (83529-141)","Brahmos 22 (83529-130)","Brahmos 24 (83529-131)","Capstone (62719-572)","Chopper (241-296)","Cimarron Plus (101563-183)","CleanSlate (228-491)","Clipper Herbicide (59639-161)","Clipper SC (71368-114)","Cornerstone 5 Plus (1381-241)","Credit 41 (71368-20)","Credit 41 Extra (71368-20)","Credit Xtreme (71368-81)","DiBro 2+2 (228-227)","DiBro 4+2 (228-386)","Direx 4L (66222-54)","Diuron 4L (19713-36)","Diuron 4L (34704-854)","Diuron 4L (66222-54)","Diuron 80 (19713-274)","Diuron 80 WDG (34704-648)","Diuron 80DF (9779-318)","Diuron 80WDG (34704-648)","DuraCor (62719-739)","Element 4 (62719-40)","Emade (83529-144)","Envoy Plus (59639-132)","Escort XP (101563-167)","Esplanade (101563-144)","EZ-JECT Copperhead Herbicide Shells (83220-1)","EZ-JECT Copperhead Herbicide Shells (83220-2)","Fusilade DX (100-1070)","Garlon 4 (62719-40)","Garlon 4 Ultra (62719-527)","Gly Star 5 Extra (42750-59)","Gly Star Plus (42750-61)","Gly-4 (42750-60-72693)","Gly-4 Plus (42750-61-72693)","Gly-4 Plus (72693-1)","Gly-4 Plus (84009-12)","Gly-Star K-Plus (42750-122)","GlyphoMate 41 (2217-847)","Grapple (71368-121)","Grazon PC (62719-181)","Habitat (241-426)","Habitat Herbicide (241-426-67690)","Hinge (83100-40-83979)","Imazuron (228-654)","Imitator Aquatic (19713-623)","Imitator DA (19713-586)","Imitator Plus (19713-526)","Karmex DF (66222-51)","KleenUp Pro (34704-890)","Krovar DF (5481-635)","Lock Down (71368-103)","Lock Down SC (71368-114)","Mad Dog 5.4 (34704-929)","Mad Dog Plus (34704-890)","Makaze (34704-890)","Method 240SL (101563-177)","Milestone (62719-519)","Mirage (34704-889)","Mirage Plus (34704-890)","Mivum (83529-171)","Nufarm Imazapic 2SL (71368-99)","Nufarm Imazapic 2SL IVM Herbicide (71368-118)","Open Range G (2935-557)","Oust Extra (101563-173)","Oust XP (101563-168)","OutPost 22K (62719-6)","Outrider (59639-223)","Overcome (83529-155)","Parrot 4L (66222-54)","Parrot DF (66222-51)","PastureGard (62719-637)","Pathfinder II (62719-176)","Patriot (228-391)","Pendulum AC (241-416)","Picture (83529-126)","Plainview SC (101563-205)","Plateau (241-365)","Plotter (83100-3-83979)","Point 80DF (83529-137)","Polaris (228-534)","Polaris AC Complete (228-570)","Polaris Herbicide (241-346-228)","Polaris SP (228-536)","Pronone 10G (33560-21)","Pronone 25G (33560-45)","Pronone MG (33560-21)","Propose (83529-169)","PureStand (71368-38)","Razor Xtreme (71368-81)","Reclaim (62719-83)","Rejuvra (101563-208)","Relegate (228-521)","Remedy (62719-70)","Remedy Ultra (62719-552)","Renovate OTF (67690-42)","Rodeo (62719-324)","Rometsol (83100-2-83979)","Savannah (83529-170)","Sendero (62719-645)","Showdown (71368-25-5905)","Sonar AS (67690-4)","Sonar Precision Release (67690-12)","Sonar Q (67690-3)","Sonar SRP (67690-3)","Sonora (81927-69)","Spike 20P (62719-121)","Spike 80DF (62719-107)","SpraKil S-5 Granules (34913-10)","SpraKil SK-13 Granular (34913-15)","SpraKil SK-26 Granular (34913-16)","Spur (42750-89)","Spyder (228-408)","Spyder Extra Selective (228-690)","SSI Maxim Arsenal 0.5G (34913-23)","SSI Maxim Arsenal 5.0 G (34913-24)","SSI Maxim Topsite 2.5G (34913-22)","Stalker (241-398)","Stigmata (91234-60)","Stinger (62719-73)","Telar XP (101563-176)","TerraVue (62719-738)","Tetris SG (91234-85)","Topple (83529-291)","Tordon 22K (62719-6)","Tordon K (62719-17)","Transformer 5G (34913-2)","Transline (62719-259)","Triclopyr 4E (42750-126)","Trip (83529-191)","Truce (83529-294)","Truslate Selective Herbicide (71368-86)","Weed Blast 4G (34913-19)","Weed Blast Res. Weed Cont. (34704-576)","Whetstone (81927-82)","Whiplash (91234-46)","Other (specify in notes)"];
   const PESTICIDE_UNITS = ["fl oz","oz (weight)","pt","qt","gal","mL","L","g","lb","% (tank mix rate)"];
   const AREA_UNITS = ["sq ft","sq yd","acres","sq m","hectares"];
   const METHODS = ["N/A","Foliar Spray","Cut-Stump","Basal Bark","Hack-and-Squirt","Frill/Girdle","Stem Injection"];
@@ -998,7 +990,6 @@
   fillSelect(document.getElementById("f-growthStage"), GROWTH_STAGES, "Select...");
   fillSelect(document.getElementById("f-patchType"), PATCH_TYPES, "Select...");
   fillSelect(document.getElementById("f-treatment"), TREATMENTS, "Select...");
-  fillSelect(document.getElementById("f-pesticide"), PESTICIDES, "Select...");
   fillSelect(document.getElementById("f-pesticideUnit"), PESTICIDE_UNITS, "Select...");
   fillSelect(document.getElementById("f-areaUnit"), AREA_UNITS, "Select...");
   fillSelect(document.getElementById("f-method"), METHODS, "Select...");
@@ -1099,6 +1090,66 @@
     if(!e.target.closest(".typeahead-wrap")) hideSpeciesList();
   });
 
+  /* ---------------- Pesticide type-ahead ---------------- */
+  const pesticideInput = document.getElementById("f-pesticide");
+  const pesticideList = document.getElementById("pesticide-suggestions");
+  let pesticideHighlight = -1;
+
+  function pesticideMatches(query){
+    const q = query.trim().toLowerCase();
+    if(!q) return PESTICIDES.slice(0, 8);
+    return PESTICIDES.filter(s => s.toLowerCase().includes(q)).slice(0, 8);
+  }
+  function renderPesticideList(query){
+    const matches = pesticideMatches(query);
+    pesticideHighlight = -1;
+    if(matches.length===0){
+      pesticideList.innerHTML = `<div class="typeahead-empty">No match — your typed text will be used as entered.</div>`;
+    } else {
+      pesticideList.innerHTML = matches.map((s,i)=>{
+        return `<div class="typeahead-item" data-idx="${i}" data-value="${escapeAttr(s)}">${escapeHtml(s)}</div>`;
+      }).join("");
+    }
+    pesticideList.classList.add("show");
+  }
+  function hidePesticideList(){ pesticideList.classList.remove("show"); }
+  function selectPesticide(value){
+    pesticideInput.value = value;
+    hidePesticideList();
+  }
+  pesticideInput.addEventListener("focus", ()=> renderPesticideList(pesticideInput.value));
+  pesticideInput.addEventListener("input", ()=> renderPesticideList(pesticideInput.value));
+  pesticideInput.addEventListener("keydown", e=>{
+    const items = [...pesticideList.querySelectorAll(".typeahead-item")];
+    if(e.key==="ArrowDown"){
+      e.preventDefault();
+      pesticideHighlight = Math.min(pesticideHighlight+1, items.length-1);
+      items.forEach((it,i)=>it.classList.toggle("highlighted", i===pesticideHighlight));
+      if(items[pesticideHighlight]) items[pesticideHighlight].scrollIntoView({block:"nearest"});
+    } else if(e.key==="ArrowUp"){
+      e.preventDefault();
+      pesticideHighlight = Math.max(pesticideHighlight-1, 0);
+      items.forEach((it,i)=>it.classList.toggle("highlighted", i===pesticideHighlight));
+      if(items[pesticideHighlight]) items[pesticideHighlight].scrollIntoView({block:"nearest"});
+    } else if(e.key==="Enter"){
+      if(pesticideHighlight>=0 && items[pesticideHighlight]){
+        e.preventDefault();
+        selectPesticide(items[pesticideHighlight].dataset.value);
+      } else {
+        hidePesticideList();
+      }
+    } else if(e.key==="Escape"){
+      hidePesticideList();
+    }
+  });
+  pesticideList.addEventListener("click", e=>{
+    const item = e.target.closest(".typeahead-item");
+    if(item && item.dataset.value) selectPesticide(item.dataset.value);
+  });
+  document.addEventListener("click", e=>{
+    if(!e.target.closest(".typeahead-wrap")) hidePesticideList();
+  });
+
   /* photos / inversion / follow-up toggles */
   document.querySelectorAll("[data-inversion]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
@@ -1157,6 +1208,7 @@
     document.getElementById("inv-form").reset();
     document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
     hideSpeciesList();
+    hidePesticideList();
     updateEdrrFlag();
     photosTaken = "No";
     inversionPresent = "No";
