@@ -1095,10 +1095,17 @@
   const pesticideList = document.getElementById("pesticide-suggestions");
   let pesticideHighlight = -1;
 
+  // Normalize the various dash-like characters phones/autocorrect substitute in
+  // (non-breaking hyphen, en dash, em dash, minus sign) to a plain hyphen, so
+  // searching an EPA number like "62719-40" matches regardless of which dash
+  // character actually got typed.
+  function normalizeDashes(s){
+    return s.replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, "-");
+  }
   function pesticideMatches(query){
-    const q = query.trim().toLowerCase();
+    const q = normalizeDashes(query.trim().toLowerCase());
     if(!q) return PESTICIDES.slice(0, 8);
-    return PESTICIDES.filter(s => s.toLowerCase().includes(q)).slice(0, 8);
+    return PESTICIDES.filter(s => normalizeDashes(s.toLowerCase()).includes(q)).slice(0, 8);
   }
   function renderPesticideList(query){
     const matches = pesticideMatches(query);
