@@ -424,10 +424,6 @@
                 <select id="f-landManager"></select>
               </div>
             </div>
-            <div class="field">
-              <label class="flabel">A.T. Mile Marker (optional)</label>
-              <input type="text" id="f-mile" placeholder="e.g. 1,024.3">
-            </div>
             <div class="row2">
               <div class="field">
                 <label class="flabel">Latitude</label>
@@ -524,14 +520,6 @@
                 <input type="number" step="1" min="0" id="f-wind" placeholder="e.g. 5">
               </div>
             </div>
-            <div class="field">
-              <label class="flabel">Temp. Inversion Present?</label>
-              <div class="toggle-row">
-                <button type="button" class="toggle-btn" data-inversion="Yes">Yes</button>
-                <button type="button" class="toggle-btn active" data-inversion="No">No</button>
-              </div>
-            </div>
-            <div class="hint">Temperature inversions trap spray near the ground and increase drift risk, check label restrictions before applying herbicide if an inversion is suspected.</div>
 
             <div class="section-divider"></div>
             <div class="section-subtitle">Use Log</div>
@@ -609,11 +597,14 @@
     <!-- ============ MAP VIEW ============ -->
     <section id="view-map" class="view">
       <div id="map-content">
-        <div id="site-map"></div>
+        <div style="position:relative;">
+          <div id="site-map"></div>
+          <button type="button" class="tb-btn" id="btn-recenter-map" style="position:absolute;top:10px;right:10px;z-index:5;background:var(--white);box-shadow:var(--shadow);">🎯 Recenter</button>
+        </div>
         <div class="map-legend">
           <span class="map-legend-item"><span class="map-dot" style="background:var(--rust);"></span>EDRR Priority</span>
           <span class="map-legend-item"><span class="map-dot" style="background:var(--moss);"></span>Standard Rotation</span>
-          <span class="map-legend-item"><span class="map-line-swatch"></span>Appalachian Trail</span>
+          <span class="map-legend-item"><span class="map-line-swatch"></span>A.T. Corridor</span>
         </div>
       </div>
     </section>
@@ -756,14 +747,14 @@
   const AREA_UNITS = ["sq ft","sq yd","acres","sq m","hectares"];
   const METHODS = ["N/A","Foliar Spray","Cut-Stump","Basal Bark","Hack-and-Squirt","Frill/Girdle","Stem Injection"];
 
-  const CSV_COLUMNS = ["Record ID","Site Name","Date","Surveyor(s)","State","Land Manager","A.T. Mile Marker","Latitude","Longitude","Species","EDRR Priority","Growth Stage","Patch Type","Infestation Size","Percent Cover","Treatment Type","Pesticide Product Used","Amount Used","Unit of Measure","Application Method","Tank Mix/Rate Notes","Applicator","Air Temp (F)","Wind Speed (mph)","Temperature Inversion","Total Area Treated","Area Unit","Follow-up Needed","Next Monitoring Date","Photos Taken","Photo File(s)/Reference","Notes"];
+  const CSV_COLUMNS = ["Record ID","Site Name","Date","Surveyor(s)","State","Land Manager","Latitude","Longitude","Species","EDRR Priority","Growth Stage","Patch Type","Infestation Size","Percent Cover","Treatment Type","Pesticide Product Used","Amount Used","Unit of Measure","Application Method","Tank Mix/Rate Notes","Applicator","Air Temp (F)","Wind Speed (mph)","Total Area Treated","Area Unit","Follow-up Needed","Next Monitoring Date","Photos Taken","Photo File(s)/Reference","Notes"];
 
   /* ================= CONFIGURE THIS ================= */
   // Paste your Apps Script Web app URL and the SHARED_TOKEN you set in Code.gs.
   // Leave APPS_SCRIPT_URL blank to run in local-only preview mode (each browser keeps its own data).
   const CONFIG = {
     APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzUgK-fQ3ESHTkzCd-maZsF7xP8_lVOrCb0XKphp6qERJZwo7hRahwxo8nKqgoMkhJRFw/exec",
-    SHARED_TOKEN: "ATInvasivesCCR333"
+    SHARED_TOKEN: "gFst28bBUyuyWIesUT6rnQ18hhLkf6QbvKoYs12m"
   };
   /* ==================================================== */
 
@@ -774,7 +765,6 @@
   let editingId = null;
   let photosTaken = "No";
   let followupNeeded = "Yes";
-  let inversionPresent = "No";
   let storageAvailable = true;
   let currentPhotos = [];
 
@@ -1183,13 +1173,7 @@
     if(!e.target.closest(".typeahead-wrap")) hidePesticideList();
   });
 
-  /* photos / inversion / follow-up toggles */
-  document.querySelectorAll("[data-inversion]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      inversionPresent = btn.dataset.inversion;
-      document.querySelectorAll("[data-inversion]").forEach(b=>b.classList.toggle("active", b===btn));
-    });
-  });
+  /* photos / follow-up toggles */
   document.querySelectorAll("[data-followup]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       followupNeeded = btn.dataset.followup;
@@ -1224,6 +1208,12 @@
     });
   });
 
+  document.getElementById("btn-recenter-map").addEventListener("click", ()=>{
+    if(!siteMap) return;
+    siteMap.invalidateSize();
+    fitSiteMapToBounds(siteMapLastBounds);
+  });
+
   /* ---------------- Next Record ID ---------------- */
   function suggestNextId(){
     let max = 0;
@@ -1245,9 +1235,7 @@
     hidePesticideList();
     updateEdrrFlag();
     photosTaken = "No";
-    inversionPresent = "No";
     followupNeeded = "Yes";
-    document.querySelectorAll("[data-inversion]").forEach(b=>b.classList.toggle("active", b.dataset.inversion==="No"));
     document.querySelectorAll("[data-followup]").forEach(b=>b.classList.toggle("active", b.dataset.followup==="Yes"));
     currentPhotos = [];
     renderPhotoThumbs();
@@ -1285,7 +1273,6 @@
       recordId, siteName, date, surveyor,
       state: document.getElementById("f-state").value,
       landManager: document.getElementById("f-landManager").value,
-      mile: document.getElementById("f-mile").value.trim(),
       lat: document.getElementById("f-lat").value,
       lng: document.getElementById("f-lng").value,
       species,
@@ -1305,7 +1292,6 @@
       applicator: document.getElementById("f-applicator").value.trim(),
       temp: document.getElementById("f-temp").value,
       wind: document.getElementById("f-wind").value,
-      inversion: inversionPresent,
       followup: followupNeeded,
       nextdate: document.getElementById("f-nextdate").value,
       photosTaken,
@@ -1383,7 +1369,6 @@
     document.getElementById("f-surveyor").value = entry.surveyor;
     document.getElementById("f-state").value = entry.state || "";
     document.getElementById("f-landManager").value = entry.landManager || "";
-    document.getElementById("f-mile").value = entry.mile || "";
     document.getElementById("f-lat").value = entry.lat || "";
     document.getElementById("f-lng").value = entry.lng || "";
     document.getElementById("f-species").value = entry.species || "";
@@ -1403,8 +1388,6 @@
     document.getElementById("f-applicator").value = entry.applicator || "";
     document.getElementById("f-temp").value = entry.temp || "";
     document.getElementById("f-wind").value = entry.wind || "";
-    inversionPresent = entry.inversion || "No";
-    document.querySelectorAll("[data-inversion]").forEach(b=>b.classList.toggle("active", b.dataset.inversion===inversionPresent));
     followupNeeded = entry.followup || "Yes";
     document.querySelectorAll("[data-followup]").forEach(b=>b.classList.toggle("active", b.dataset.followup===followupNeeded));
     document.getElementById("f-nextdate").value = entry.nextdate || "";
@@ -1556,6 +1539,8 @@
   const MAP_STANDARD_COLOR = "#54724A";
   let siteMap = null;
   let siteMapMarkers = null;
+  let siteMapEverFit = false;
+  let siteMapLastBounds = [];
 
   function initSiteMap(){
     if(siteMap) return;
@@ -1571,6 +1556,16 @@
     siteMapMarkers = L.layerGroup().addTo(siteMap);
   }
 
+  function fitSiteMapToBounds(bounds){
+    if(bounds.length===1){
+      siteMap.setView(bounds[0], 15);
+    } else if(bounds.length>1){
+      siteMap.fitBounds(bounds, { padding: [30,30] });
+    } else {
+      siteMap.fitBounds(AT_TRAIL_COORDS, { padding: [20,20] });
+    }
+  }
+
   function renderMap(){
     const list = Object.values(entries).filter(e=>{
       const lat = parseFloat(e.lat), lng = parseFloat(e.lng);
@@ -1579,9 +1574,6 @@
     document.getElementById("map-content").style.display = "block";
 
     initSiteMap();
-    // The map div was hidden (display:none) until just now — Leaflet needs a nudge
-    // once it's actually visible, or tiles render blank/mis-sized.
-    setTimeout(()=> siteMap.invalidateSize(), 50);
 
     siteMapMarkers.clearLayers();
     const bounds = [];
@@ -1610,14 +1602,22 @@
       marker.addTo(siteMapMarkers);
       bounds.push([lat, lng]);
     });
-    if(bounds.length===1){
-      siteMap.setView(bounds[0], 15);
-    } else if(bounds.length>1){
-      siteMap.fitBounds(bounds, { padding: [30,30] });
-    } else {
-      // No geotagged sites yet — frame the full trail corridor instead of a blank default view.
-      siteMap.fitBounds(AT_TRAIL_COORDS, { padding: [20,20] });
-    }
+    siteMapLastBounds = bounds;
+
+    // Wait for the browser to actually paint the now-visible container before asking
+    // Leaflet to measure it — calling invalidateSize() and fitBounds()/setView() in the
+    // same synchronous tick (or on a fixed timer) meant Leaflet sometimes computed the
+    // zoom against a stale, too-small container, causing the view to jump or over-zoom.
+    // requestAnimationFrame guarantees a layout pass has happened first.
+    requestAnimationFrame(()=>{
+      siteMap.invalidateSize();
+      // Only auto-fit the very first time the map has data — once the user has panned
+      // or zoomed manually, simply revisiting the tab shouldn't yank the view back.
+      if(!siteMapEverFit){
+        fitSiteMapToBounds(bounds);
+        siteMapEverFit = true;
+      }
+    });
   }
 
   /* ---------------- Analytics ---------------- */
@@ -1729,9 +1729,9 @@
     const rows = [CSV_COLUMNS];
     list.forEach(e=>{
       rows.push([
-        e.recordId, e.siteName, e.date, e.surveyor, e.state, e.landManager, e.mile, e.lat, e.lng,
+        e.recordId, e.siteName, e.date, e.surveyor, e.state, e.landManager, e.lat, e.lng,
         e.species, e.edrrPriority, e.growthStage, e.patchType, e.size, e.cover,
-        e.treatment, e.pesticide, e.pesticideAmount, e.pesticideUnit, e.method, e.tankmix, e.applicator, e.temp, e.wind, e.inversion,
+        e.treatment, e.pesticide, e.pesticideAmount, e.pesticideUnit, e.method, e.tankmix, e.applicator, e.temp, e.wind,
         e.areaTreated, e.areaUnit,
         e.followup, e.nextdate, e.photosTaken, (e.photos||[]).map(p=>p.name).join("; "), e.notes
       ]);
