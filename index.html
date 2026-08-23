@@ -336,6 +336,35 @@
   .chart-fill{height:100%;border-radius:5px;transition:width .4s ease;min-width:3px;}
   .chart-value{flex:0 0 auto;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;color:var(--ink);min-width:20px;text-align:right;}
   .chart-empty-note{font-size:12.5px;color:var(--ink-soft);text-align:center;padding:12px 0;}
+  .chart-row.clickable{cursor:pointer;border-radius:8px;padding:4px 6px;margin:0 -6px;transition:background .12s ease;}
+  .chart-row.clickable:active{background:var(--parchment-deep);}
+  .filter-chip-bar{
+    display:flex;align-items:center;gap:8px;background:var(--parchment-deep);
+    border:1.5px solid var(--forest-light);border-radius:8px;padding:9px 12px;margin-bottom:12px;
+    font-size:13px;color:var(--forest-dark);font-weight:600;
+  }
+  .filter-chip-bar .fc-label{flex:1;}
+  .filter-chip-bar button{
+    border:none;background:var(--forest);color:var(--white);border-radius:20px;
+    padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .watch-coverage-bar{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .watch-coverage-track{flex:1;height:20px;background:var(--parchment-deep);border-radius:10px;overflow:hidden;}
+  .watch-coverage-fill{height:100%;background:var(--moss);border-radius:10px;transition:width .4s ease;}
+  .watch-coverage-count{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:15px;color:var(--forest-dark);white-space:nowrap;}
+  .watch-toggle{
+    width:100%;text-align:left;background:none;border:none;padding:8px 0 4px;
+    font-size:12.5px;font-weight:700;color:var(--forest-dark);cursor:pointer;font-family:'Inter',sans-serif;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .watch-missing-list{display:none;max-height:240px;overflow-y:auto;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;}
+  .watch-missing-list.show{display:block;}
+  .watch-missing-item{
+    padding:7px 8px;font-size:12.5px;border-radius:6px;cursor:pointer;color:var(--ink);
+    display:flex;justify-content:space-between;gap:8px;
+  }
+  .watch-missing-item:active{background:var(--parchment-deep);}
+  .watch-missing-item .wm-sci{color:var(--ink-soft);font-style:italic;font-size:11.5px;}
 
   /* guide view */
   .guide-section{margin-bottom:18px;}
@@ -630,6 +659,7 @@
         <button class="tb-btn" id="btn-refresh">↻ Refresh</button>
         <button class="tb-btn primary" id="btn-export">⬇ Download CSV</button>
       </div>
+      <div id="table-filter-chip" style="display:none;"></div>
       <div id="entries-container"></div>
     </section>
 
@@ -672,6 +702,25 @@
       </div>
       <div id="analytics-content">
         <div class="stat-grid" id="stat-grid"></div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-num">🎯</div><h2>Trail Watch List Coverage</h2></div>
+          <div class="card-body">
+            <div class="hint" style="margin:0 0 10px;">Of the Trail Watch List species tracked in the Species Profiles tab, how many have at least one field detection logged.</div>
+            <div id="watch-coverage"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-num">📈</div><h2>Detections Over Time</h2></div>
+          <div class="card-body">
+            <div class="hint" style="margin:0 0 10px;">Sites logged by month.</div>
+            <div id="chart-timeline"></div>
+          </div>
+        </div>
+
+        <div class="hint" style="margin:0 0 12px;text-align:center;">Tap any bar below to jump to that filtered slice of the Field Log.</div>
+
         <div class="card">
           <div class="card-head"><div class="card-num">⚠</div><h2>Trail Watch List Detections</h2></div>
           <div class="card-body"><div id="chart-edrr"></div></div>
@@ -745,6 +794,12 @@
 
   let entries = {};
   let editingId = null;
+  let tableFilter = null; // {field, value, label} — set by tapping an Analytics chart bar
+
+  function goToFilteredLog(field, value, label){
+    tableFilter = { field, value, label };
+    document.querySelector('.tab[data-view="table"]').click();
+  }
   let photosTaken = "No";
   let followupNeeded = "Yes";
   let storageAvailable = true;
@@ -1465,9 +1520,30 @@
 
   function renderTable(){
     const container = document.getElementById("entries-container");
-    const list = Object.values(entries).sort((a,b)=> a.recordId.localeCompare(b.recordId, undefined, {numeric:true}));
+    const chipEl = document.getElementById("table-filter-chip");
+    let list = Object.values(entries).sort((a,b)=> a.recordId.localeCompare(b.recordId, undefined, {numeric:true}));
+
+    if(tableFilter){
+      list = list.filter(e => {
+        if(tableFilter.field === "_month") return (e.date || "").slice(0,7) === tableFilter.value;
+        return (e[tableFilter.field] || "Unspecified") === tableFilter.value;
+      });
+      chipEl.style.display = "flex";
+      chipEl.className = "filter-chip-bar";
+      chipEl.innerHTML = `<span class="fc-label">Filtered: ${escapeHtml(tableFilter.label)}</span><button id="btn-clear-filter">Clear ✕</button>`;
+      document.getElementById("btn-clear-filter").addEventListener("click", ()=>{
+        tableFilter = null;
+        renderTable();
+      });
+    } else {
+      chipEl.style.display = "none";
+      chipEl.innerHTML = "";
+    }
+
     if(list.length===0){
-      container.innerHTML = `<div class="empty-state"><div class="em-icon">🌿</div><h3>No sites logged yet</h3><p>Entries you save from the Log a Site tab will appear here, shared across everyone using this field log.</p></div>`;
+      const msg = tableFilter ? "No sites match this filter." : "No sites logged yet";
+      const sub = tableFilter ? "Try clearing the filter above." : "Entries you save from the Log a Site tab will appear here, shared across everyone using this field log.";
+      container.innerHTML = `<div class="empty-state"><div class="em-icon">🌿</div><h3>${msg}</h3><p>${sub}</p></div>`;
       return;
     }
     container.innerHTML = list.map(e=>{
@@ -1732,7 +1808,8 @@
 
   function renderBarChart(container, dataObj, options){
     options = options || {};
-    const entriesArr = Object.entries(dataObj).sort((a,b)=> b[1]-a[1]);
+    let entriesArr = Object.entries(dataObj);
+    if(!options.chrono) entriesArr = entriesArr.sort((a,b)=> b[1]-a[1]);
     const filtered = options.limit ? entriesArr.slice(0, options.limit) : entriesArr;
     if(filtered.length===0){
       container.innerHTML = `<div class="chart-empty-note">No data yet.</div>`;
@@ -1742,8 +1819,9 @@
     container.innerHTML = filtered.map(([label, count], i)=>{
       const pct = max>0 ? Math.round((count/max)*100) : 0;
       const color = options.colorFor ? options.colorFor(label) : CHART_COLORS[i % CHART_COLORS.length];
+      const clickable = options.onClick ? "clickable" : "";
       return `
-        <div class="chart-row">
+        <div class="chart-row ${clickable}" ${options.onClick ? `data-chart-label="${escapeAttr(label)}"` : ""}>
           <div class="chart-label" title="${escapeAttr(label)}">${escapeHtml(label)}</div>
           <div class="chart-bar-line">
             <div class="chart-track"><div class="chart-fill" style="width:${pct}%;background:${color};"></div></div>
@@ -1751,6 +1829,11 @@
           </div>
         </div>`;
     }).join("");
+    if(options.onClick){
+      container.querySelectorAll("[data-chart-label]").forEach(el=>{
+        el.addEventListener("click", ()=> options.onClick(el.dataset.chartLabel));
+      });
+    }
   }
 
   function renderAnalytics(){
@@ -1794,16 +1877,21 @@
 
     const edrrBreakdown = {"Trail Watch List": edrrCount, "Standard Rotation": total - edrrCount};
     renderBarChart(document.getElementById("chart-edrr"), edrrBreakdown, {
-      colorFor: (label)=> label==="Trail Watch List" ? "#BD4515" : "#54724A"
+      colorFor: (label)=> label==="Trail Watch List" ? "#BD4515" : "#54724A",
+      onClick: (label)=> goToFilteredLog("edrrPriority", label==="Trail Watch List" ? "Yes" : "No", label)
     });
 
     const bySpecies = {};
     list.forEach(e=>{ const k = e.species || "Unspecified"; bySpecies[k] = (bySpecies[k]||0)+1; });
-    renderBarChart(document.getElementById("chart-species"), bySpecies, {limit:8});
+    renderBarChart(document.getElementById("chart-species"), bySpecies, {limit:8,
+      onClick: (label)=> goToFilteredLog("species", label, `Species: ${label}`)
+    });
 
     const byTreatment = {};
     list.forEach(e=>{ const k = e.treatment || "Unspecified"; byTreatment[k] = (byTreatment[k]||0)+1; });
-    renderBarChart(document.getElementById("chart-treatment"), byTreatment);
+    renderBarChart(document.getElementById("chart-treatment"), byTreatment, {
+      onClick: (label)=> goToFilteredLog("treatment", label, `Treatment: ${label}`)
+    });
 
     // Top used pesticides, ranked by how many records used each product.
     const byHerbicide = {};
@@ -1812,11 +1900,74 @@
         byHerbicide[e.pesticide] = (byHerbicide[e.pesticide]||0)+1;
       }
     });
-    renderBarChart(document.getElementById("chart-herbicide"), byHerbicide, {limit:8});
+    renderBarChart(document.getElementById("chart-herbicide"), byHerbicide, {limit:8,
+      onClick: (label)=> goToFilteredLog("pesticide", label, `Pesticide: ${label}`)
+    });
 
     const byState = {};
     list.forEach(e=>{ const k = e.state || "Unspecified"; byState[k] = (byState[k]||0)+1; });
-    renderBarChart(document.getElementById("chart-state"), byState);
+    renderBarChart(document.getElementById("chart-state"), byState, {
+      onClick: (label)=> goToFilteredLog("state", label, `State: ${label}`)
+    });
+
+    // ---- Detections Over Time (by month, chronological) ----
+    const byMonth = {};
+    list.forEach(e=>{
+      if(!e.date) return;
+      const month = e.date.slice(0,7); // YYYY-MM
+      byMonth[month] = (byMonth[month]||0)+1;
+    });
+    const sortedMonths = {};
+    Object.keys(byMonth).sort().forEach(k=> sortedMonths[k] = byMonth[k]);
+    renderBarChart(document.getElementById("chart-timeline"), sortedMonths, { chrono:true,
+      onClick: (label)=> goToFilteredLog("_month", label, `Logged in: ${label}`)
+    });
+
+    // ---- Trail Watch List Coverage: cross-references Species Profiles data with field log ----
+    renderWatchCoverage(list);
+  }
+
+  function renderWatchCoverage(list){
+    const watchSpecies = SPECIES_DATA.filter(s=> s.isEDRR);
+    const detectedDisplays = new Set(list.map(e=> e.species));
+    const detected = [];
+    const missing = [];
+    watchSpecies.forEach(s=>{
+      const display = `${s.common} (${s.sci})`;
+      (detectedDisplays.has(display) ? detected : missing).push(s);
+    });
+    const pct = watchSpecies.length ? Math.round((detected.length / watchSpecies.length) * 100) : 0;
+
+    const el = document.getElementById("watch-coverage");
+    el.innerHTML = `
+      <div class="watch-coverage-bar">
+        <div class="watch-coverage-track"><div class="watch-coverage-fill" style="width:${pct}%;"></div></div>
+        <div class="watch-coverage-count">${detected.length} / ${watchSpecies.length}</div>
+      </div>
+      <button class="watch-toggle" id="watch-missing-toggle">
+        <span>${missing.length} Trail Watch species with no field detections yet</span>
+        <span id="watch-missing-chevron">▾</span>
+      </button>
+      <div class="watch-missing-list" id="watch-missing-list">
+        ${missing.map(s=> `<div class="watch-missing-item" data-sci="${escapeAttr(s.sci)}"><span>${escapeHtml(s.common)}</span><span class="wm-sci">${escapeHtml(s.sci)}</span></div>`).join("") || `<div class="chart-empty-note">All Trail Watch List species have been detected at least once.</div>`}
+      </div>
+    `;
+    const toggleBtn = document.getElementById("watch-missing-toggle");
+    const listEl = document.getElementById("watch-missing-list");
+    const chevron = document.getElementById("watch-missing-chevron");
+    toggleBtn.addEventListener("click", ()=>{
+      const open = listEl.classList.toggle("show");
+      chevron.textContent = open ? "▴" : "▾";
+    });
+    listEl.querySelectorAll("[data-sci]").forEach(item=>{
+      item.addEventListener("click", ()=>{
+        profileSearchQuery = item.dataset.sci;
+        const searchInput = document.getElementById("species-search");
+        if(searchInput) searchInput.value = profileSearchQuery;
+        document.querySelector('.tab[data-view="species"]').click();
+        renderSpeciesProfiles();
+      });
+    });
   }
 
   function escapeHtml(s){
